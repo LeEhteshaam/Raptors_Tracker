@@ -51,6 +51,3 @@ async def parse_games():
 
     return cleaned_games
 
-handler = Mangum(app)
-
-
