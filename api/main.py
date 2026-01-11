@@ -5,6 +5,7 @@ import httpx
 import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
 
 load_dotenv()
 api = os.getenv("API_KEY")
@@ -50,6 +51,6 @@ async def parse_games():
 
     return cleaned_games
 
-handler = app
+handler = Mangum(app)
 
 
