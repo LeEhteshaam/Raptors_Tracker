@@ -14,7 +14,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "*",  
-        "https://your-project-name.vercel.app"  
+        "https://raptors-tracker.vercel.app/"  
     ],      
     allow_credentials=True,   
     allow_methods=["GET"],      
