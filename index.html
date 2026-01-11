@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raptors Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'raptors-red': '#CE1141',
+                        'dark-bg': '#121212',
+                        'dark-card': '#1E1E1E',
+                        'dark-border': '#2A2A2A',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #121212;
+        }
+        .glass-card {
+            background: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const NBA_TEAM_IDS = {
+            'Boston Celtics': 1610612738,
+            'Brooklyn Nets': 1610612751,
+            'New York Knicks': 1610612752,
+            'Philadelphia 76ers': 1610612755,
+            'Toronto Raptors': 1610612761,
+            'Chicago Bulls': 1610612741,
+            'Cleveland Cavaliers': 1610612739,
+            'Detroit Pistons': 1610612765,
+            'Indiana Pacers': 1610612754,
+            'Milwaukee Bucks': 1610612749,
+            'Atlanta Hawks': 1610612737,
+            'Charlotte Hornets': 1610612766,
+            'Miami Heat': 1610612748,
+            'Orlando Magic': 1610612753,
+            'Washington Wizards': 1610612764,
+            'Denver Nuggets': 1610612743,
+            'Minnesota Timberwolves': 1610612750,
+            'Oklahoma City Thunder': 1610612760,
+            'Portland Trail Blazers': 1610612757,
+            'Utah Jazz': 1610612762,
+            'Golden State Warriors': 1610612744,
+            'LA Clippers': 1610612746,
+            'Los Angeles Clippers': 1610612746,
+            'Los Angeles Lakers': 1610612747,
+            'Phoenix Suns': 1610612756,
+            'Sacramento Kings': 1610612758,
+            'Dallas Mavericks': 1610612742,
+            'Houston Rockets': 1610612745,
+            'Memphis Grizzlies': 1610612763,
+            'New Orleans Pelicans': 1610612740,
+            'San Antonio Spurs': 1610612759,
+        };
+
+        const GameCard = ({ game }) => {
+            const isWin = game.result === 'W';
+            const isHome = game.venue === 'Home';
+            
+            return (
+                <div className="glass-card rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:border-raptors-red/30">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col items-start min-w-[80px]">
+                            <span className="text-gray-400 text-xs uppercase tracking-wider">
+                                {game.date}
+                            </span>
+                            <span className={`text-xs mt-1 px-2 py-0.5 rounded-full ${
+                                isHome 
+                                    ? 'bg-raptors-red/20 text-raptors-red' 
+                                    : 'bg-gray-700/50 text-gray-400'
+                            }`}>
+                                {isHome ? 'HOME' : 'AWAY'}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-1">
+                            <img 
+                                src={`https://cdn.nba.com/logos/nba/${NBA_TEAM_IDS[game.opponent]}/global/L/logo.svg`}
+                                alt={game.opponent}
+                                className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                                onError={(e) => {
+                                    e.target.src = 'https://cdn.nba.com/logos/leagues/logo-nba.svg';
+                                }}
+                            />
+                            <div className="flex flex-col">
+                                <span className="text-white font-semibold text-sm sm:text-base">
+                                    {game.opponent}
+                                </span>
+                                <span className="text-gray-500 text-xs">
+                                    {isHome ? 'vs' : '@'} {game.opponent.split(' ').pop()}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <div className="text-right">
+                                <div className="text-white font-bold text-lg sm:text-xl tracking-tight">
+                                    {game.score}
+                                </div>
+                                <span className="text-gray-500 text-xs">Final</span>
+                            </div>
+
+                            <div className={`
+                                w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center
+                                font-bold text-lg sm:text-xl transition-all duration-300
+                                ${isWin 
+                                    ? 'bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/20' 
+                                    : 'bg-raptors-red/20 text-raptors-red shadow-lg shadow-raptors-red/20'
+                                }
+                            `}>
+                                {game.result}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const RaptorsTracker = () => {
+            const [games, setGames] = React.useState([]);
+            const [loading, setLoading] = React.useState(true);
+            const [error, setError] = React.useState(null);
+
+            React.useEffect(() => {
+                const fetchGames = async () => {
+                    try {
+                        const response = await fetch('/games');
+                        const data = await response.json();
+                        
+                        const transformedGames = data.map(game => {
+                            const isHome = game.home === 'Toronto Raptors';
+                            const opponent = isHome ? game.visitor : game.home;
+                            const raptorsScore = isHome ? game.home_score : game.visitor_score;
+                            const opponentScore = isHome ? game.visitor_score : game.home_score;
+                            const isWin = raptorsScore > opponentScore;
+                            
+                            const dateObj = new Date(game.date);
+                            const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                            });
+
+                            return {
+                                date: formattedDate,
+                                opponent: opponent,
+                                venue: isHome ? 'Home' : 'Away',
+                                result: isWin ? 'W' : 'L',
+                                score: `${raptorsScore} - ${opponentScore}`
+                            };
+                        });
+
+                        transformedGames.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        
+                        setGames(transformedGames);
+                        setLoading(false);
+                    } catch (err) {
+                        console.error('Error fetching games:', err);
+                        setError('Failed to load games');
+                        setLoading(false);
+                    }
+                };
+
+                fetchGames();
+            }, []);
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-raptors-red"></div>
+                    </div>
+                );
+            }
+
+            if (error) {
+                return (
+                    <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+                        <div className="text-raptors-red text-lg">{error}</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-dark-bg py-8 px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="flex items-center gap-4 mb-8">
+                            <img 
+                                src={`https://cdn.nba.com/logos/nba/${NBA_TEAM_IDS['Toronto Raptors']}/global/L/logo.svg`}
+                                alt="Toronto Raptors"
+                                className="w-16 h-16 sm:w-20 sm:h-20"
+                            />
+                            <div>
+                                <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                                    Toronto Raptors
+                                </h1>
+                                <p className="text-gray-400 text-sm sm:text-base">
+                                    2025-26 Season Schedule
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="glass-card rounded-2xl p-4 mb-6 flex justify-around">
+                            <div className="text-center">
+                                <div className="text-emerald-400 font-bold text-2xl">
+                                    {games.filter(g => g.result === 'W').length}
+                                </div>
+                                <div className="text-gray-500 text-xs uppercase">Wins</div>
+                            </div>
+                            <div className="w-px bg-dark-border"></div>
+                            <div className="text-center">
+                                <div className="text-raptors-red font-bold text-2xl">
+                                    {games.filter(g => g.result === 'L').length}
+                                </div>
+                                <div className="text-gray-500 text-xs uppercase">Losses</div>
+                            </div>
+                            <div className="w-px bg-dark-border"></div>
+                            <div className="text-center">
+                                <div className="text-white font-bold text-2xl">
+                                    {games.length}
+                                </div>
+                                <div className="text-gray-500 text-xs uppercase">Games</div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            {games.map((game, index) => (
+                                <GameCard key={index} game={game} />
+                            ))}
+                        </div>
+
+                        <div className="mt-8 text-center text-gray-600 text-sm">
+                            Data provided by Ball Don't Lie API
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<RaptorsTracker />);
+    </script>
+</body>
+</html>
